@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 model_id = config("MODEL_ID")
+print("Using model:", model_id)
 processor = Wav2Vec2Processor.from_pretrained(model_id)
 model = Wav2Vec2ForCTC.from_pretrained(model_id).to(device)
 model.eval()

@@ -15,7 +15,7 @@ def worker(queue: Queue, transcription_results):
                 break
 
             logger.info(f"Processing file {audio_path}")
-
+            print("model loaded", model)
             transcription = get_asr_result(audio_path, model, processor)
             transcription_results[file_id] = transcription
 
