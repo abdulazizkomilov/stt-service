@@ -12,10 +12,6 @@ multiprocessing.set_start_method("spawn", force=True)
 app = FastAPI()
 logger = setup_logger()
 
-manager = Manager()
-transcription_results = manager.dict()
-audio_queue = Queue()
-
 
 @app.get("/")
 async def root():
@@ -58,6 +54,10 @@ async def get_transcription_result(file_id: str):
 
 
 if __name__ == "__main__":
+    manager = Manager()
+    transcription_results = manager.dict()
+    audio_queue = Queue()
+
     num_workers = 1
     workers = []
 
