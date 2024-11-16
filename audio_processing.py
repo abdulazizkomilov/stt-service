@@ -15,12 +15,6 @@ logger.info(f"Using device: {device}")
 def load_model_and_processor(model_id: str):
     """
     Load the Wav2Vec2 model and processor for speech-to-text.
-
-    Args:
-        model_id (str): Path or identifier for the pre-trained model.
-
-    Returns:
-        tuple: The model and processor objects.
     """
     logger.info(f"Loading model and processor with ID: {model_id}")
     try:
@@ -33,41 +27,46 @@ def load_model_and_processor(model_id: str):
         raise RuntimeError(f"Error loading model or processor: {e}")
 
 
-def get_asr_result(audio_path: str, model, processor, sr: int = 16000) -> str:
+def get_asr_result(audio_path: str, model, processor, sr: int = 16000, chunk_duration: int = 30) -> str:
     """
-    Perform speech-to-text on an audio file.
-
-    Args:
-        audio_path (str): Path to the audio file.
-        model: Pretrained Wav2Vec2 model.
-        processor: Processor associated with the model.
-        sr (int): Target sampling rate for audio processing.
-
-    Returns:
-        str: The transcribed text from the audio.
+    Perform speech-to-text on an audio file, processing it in chunks.
     """
     try:
         # Load audio file as waveform
         logger.info(f"Loading audio file: {audio_path}")
         audio, _ = librosa.load(audio_path, sr=sr)
 
-        # Process the raw waveform with the processor
-        inputs = processor(audio, sampling_rate=sr, return_tensors="pt", padding=True)
+        # Split the audio into chunks
+        chunk_samples = sr * chunk_duration
+        num_chunks = len(audio) // chunk_samples + 1
 
-        # Transfer the input tensor to the same device as the model
-        inputs = {key: tensor.to(device) for key, tensor in inputs.items()}
+        # Transcribe each chunk and combine the results
+        transcriptions = []
+        for i in range(num_chunks):
+            start = i * chunk_samples
+            end = (i + 1) * chunk_samples
+            audio_chunk = audio[start:end]
 
-        # Perform inference with the model
-        logger.info("Performing inference...")
-        with torch.no_grad():
-            logits = model(inputs["input_values"], attention_mask=inputs.get("attention_mask")).logits
+            # Process the raw waveform with the processor
+            inputs = processor(audio_chunk, sampling_rate=sr, return_tensors="pt", padding=True)
 
-        # Decode the logits to obtain the transcription
-        predicted_ids = torch.argmax(logits, dim=-1)
-        predicted_sentence = processor.batch_decode(predicted_ids)[0]
+            # Transfer the input tensor to the same device as the model
+            inputs = {key: tensor.to(device) for key, tensor in inputs.items()}
 
+            # Perform inference with the model
+            logger.info(f"Performing inference for chunk {i + 1} of {num_chunks}...")
+            with torch.no_grad():
+                logits = model(inputs["input_values"], attention_mask=inputs.get("attention_mask")).logits
+
+            # Decode the logits to obtain the transcription
+            predicted_ids = torch.argmax(logits, dim=-1)
+            chunk_transcription = processor.batch_decode(predicted_ids)[0]
+            transcriptions.append(chunk_transcription)
+
+        # Combine all transcriptions
+        final_transcription = " ".join(transcriptions)
         logger.info("Transcription complete.")
-        return predicted_sentence
+        return final_transcription
 
     except Exception as e:
         logger.error(f"Error during ASR processing: {e}")
