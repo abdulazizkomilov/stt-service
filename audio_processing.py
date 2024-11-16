@@ -21,7 +21,9 @@ def get_asr_result(audio_path, model, processor, sr=16000, chunk_duration=10):
     logger.info(f"Performing ASR on {audio_path}")
     waveform, sample_rate = torchaudio.load(audio_path)
     if sample_rate != sr:
+        logger.info(f"Resampling audio from {sample_rate} to {sr}")
         waveform = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=sr)(waveform)
+    logger.info(f"Audio loaded with {sr} samples per second")
     audio = waveform.squeeze().numpy()
     logger.info(f"Audio loaded with {sr} samples per second")
     chunk_samples = sr * chunk_duration
