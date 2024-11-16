@@ -1,44 +1,74 @@
 import torch
 import logging
-import torchaudio
 import librosa
 from transformers import Wav2Vec2ForCTC, Wav2Vec2Processor
-from decouple import config
 
+# Configure logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+# Detect the device (GPU or CPU)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 logger.info(f"Using device: {device}")
 
-# Load model and processor
-model_id = config("MODEL_ID")
-logger.info(f"Using model: {model_id}")
-processor = Wav2Vec2Processor.from_pretrained(model_id)
-model = Wav2Vec2ForCTC.from_pretrained(model_id).to(device)
-model.eval()
+
+def load_model_and_processor(model_id: str):
+    """
+    Load the Wav2Vec2 model and processor for speech-to-text.
+
+    Args:
+        model_id (str): Path or identifier for the pre-trained model.
+
+    Returns:
+        tuple: The model and processor objects.
+    """
+    logger.info(f"Loading model and processor with ID: {model_id}")
+    try:
+        processor = Wav2Vec2Processor.from_pretrained(model_id)
+        model = Wav2Vec2ForCTC.from_pretrained(model_id).to(device)
+        model.eval()
+        return model, processor
+    except Exception as e:
+        logger.error(f"Failed to load model or processor: {e}")
+        raise RuntimeError(f"Error loading model or processor: {e}")
 
 
-# Define ASR function
-def get_asr_result(audio_path, model, processor, sr=16000):
-    # Load audio file as a waveform using librosa
-    audio, _ = librosa.load(audio_path, sr=sr)
+def get_asr_result(audio_path: str, model, processor, sr: int = 16000) -> str:
+    """
+    Perform speech-to-text on an audio file.
 
-    # Process the raw waveform with the processor
-    inputs = processor(audio, sampling_rate=sr, return_tensors="pt", padding=True)
+    Args:
+        audio_path (str): Path to the audio file.
+        model: Pretrained Wav2Vec2 model.
+        processor: Processor associated with the model.
+        sr (int): Target sampling rate for audio processing.
 
-    # Transfer the input tensor to the same device as the model
-    inputs = {key: tensor.to(device) for key, tensor in inputs.items()}
+    Returns:
+        str: The transcribed text from the audio.
+    """
+    try:
+        # Load audio file as waveform
+        logger.info(f"Loading audio file: {audio_path}")
+        audio, _ = librosa.load(audio_path, sr=sr)
 
-    # Perform inference with the model
-    with torch.no_grad():
-        logits = model(inputs["input_values"], attention_mask=inputs.get("attention_mask")).logits
+        # Process the raw waveform with the processor
+        inputs = processor(audio, sampling_rate=sr, return_tensors="pt", padding=True)
 
-    # Decode the logits to obtain the transcription
-    predicted_ids = torch.argmax(logits, dim=-1)
-    predicted_sentence = processor.batch_decode(predicted_ids)[0]
-    return predicted_sentence
+        # Transfer the input tensor to the same device as the model
+        inputs = {key: tensor.to(device) for key, tensor in inputs.items()}
 
+        # Perform inference with the model
+        logger.info("Performing inference...")
+        with torch.no_grad():
+            logits = model(inputs["input_values"], attention_mask=inputs.get("attention_mask")).logits
 
-result = get_asr_result("./audios/d24e9c76-edd3-4cee-bf17-adc4d264abff.wav", model, processor)
-print(result)
+        # Decode the logits to obtain the transcription
+        predicted_ids = torch.argmax(logits, dim=-1)
+        predicted_sentence = processor.batch_decode(predicted_ids)[0]
+
+        logger.info("Transcription complete.")
+        return predicted_sentence
+
+    except Exception as e:
+        logger.error(f"Error during ASR processing: {e}")
+        raise RuntimeError(f"Error processing audio file {audio_path}: {e}")
