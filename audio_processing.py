@@ -27,7 +27,7 @@ def load_model_and_processor(model_id: str):
         raise RuntimeError(f"Error loading model or processor: {e}")
 
 
-def get_asr_result(audio_path: str, model, processor, sr: int = 16000, chunk_duration: int = 30) -> str:
+def get_asr_result(audio_path: str, model, processor, sr: int = 16000, chunk_duration: int = 60) -> str:
     """
     Perform speech-to-text on an audio file, processing it in chunks.
     """
