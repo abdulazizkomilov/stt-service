@@ -27,6 +27,9 @@ def get_asr_result(audio_path, model, processor, sr=16000):
     # Process the raw waveform with the processor
     inputs = processor(audio, sampling_rate=sr, return_tensors="pt", padding=True)
 
+    # Transfer the input tensor to the same device as the model
+    inputs = {key: tensor.to(device) for key, tensor in inputs.items()}
+
     # Perform inference with the model
     with torch.no_grad():
         logits = model(inputs.input_values, attention_mask=inputs.attention_mask).logits
