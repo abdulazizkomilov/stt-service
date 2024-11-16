@@ -7,8 +7,12 @@ logger = logging.getLogger(__name__)
 
 def worker(queue: Queue, transcription_results):
     """Worker function to process audio files from the queue."""
+    logger.info(f"Starting worker ...")
+
     while True:
         file_id, audio_path = queue.get()
+        logger.info(f"Received file {audio_path}")
+
         try:
             if audio_path is None:
                 logger.info(f"Worker exiting.")
