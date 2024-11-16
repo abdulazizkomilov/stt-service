@@ -1,6 +1,6 @@
 import logging
 from audio_processing import get_asr_result, load_model_and_processor
-from torch.multiprocessing import Queue
+from multiprocessing import Queue
 from decouple import config
 
 model_id = config("MODEL_ID")

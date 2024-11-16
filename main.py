@@ -1,9 +1,9 @@
 import uuid
 import uvicorn
-from torch import multiprocessing
+import multiprocessing
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from typing import List
-from torch.multiprocessing import Process, Queue, Manager
+from multiprocessing import Process, Queue, Manager
 from utils import save_temp_file, setup_logger
 from worker import worker
 
