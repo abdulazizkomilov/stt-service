@@ -18,11 +18,12 @@ model.gradient_checkpointing_enable()
 
 def get_asr_result(audio_path, model, processor, sr=16000, chunk_duration=10):
     """Perform ASR on audio in chunks to avoid memory overload."""
+    logger.info(f"Performing ASR on {audio_path}")
     waveform, sample_rate = torchaudio.load(audio_path)
     if sample_rate != sr:
         waveform = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=sr)(waveform)
     audio = waveform.squeeze().numpy()
-
+    logger.info(f"Audio loaded with {sr} samples per second")
     chunk_samples = sr * chunk_duration
     transcriptions = []
 
@@ -42,5 +43,7 @@ def get_asr_result(audio_path, model, processor, sr=16000, chunk_duration=10):
 
         del input_values, attention_mask, logits
         torch.cuda.empty_cache()
+
+    logger.info(f"ASR result for {audio_path}: {' '.join(transcriptions)}")
 
     return " ".join(transcriptions)

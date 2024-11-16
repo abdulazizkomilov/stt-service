@@ -29,7 +29,7 @@ async def transcribe_audio(files: List[UploadFile] = File(...)):
             file_id = str(uuid.uuid4())
             file_path = await save_temp_file(file)
             audio_queue.put((file_id, file_path))
-            transcription_results[file_id] = "Processing"  # Placeholder to track progress
+            transcription_results[file_id] = "Processing"
             file_ids.append(file_id)
         return {"message": "Audios added to the processing queue", "file_ids": file_ids}
     except Exception as e:
@@ -55,7 +55,7 @@ async def get_transcription_result(file_id: str):
 
 
 if __name__ == "__main__":
-    num_workers = 2  # Increase worker count for faster processing
+    num_workers = 1
     workers = []
 
     for _ in range(num_workers):
@@ -67,6 +67,6 @@ if __name__ == "__main__":
         uvicorn.run(app, host="0.0.0.0", port=8000)
     finally:
         for _ in workers:
-            audio_queue.put(None)  # Signal workers to exit
+            audio_queue.put(None)
         for worker_process in workers:
             worker_process.join()

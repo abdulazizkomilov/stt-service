@@ -11,7 +11,7 @@ def worker(queue: Queue, transcription_results):
 
     while True:
         task = queue.get()
-        if task is None:  # Exit signal
+        if task is None:
             logger.info("Worker exiting.")
             break
 
@@ -21,7 +21,8 @@ def worker(queue: Queue, transcription_results):
         try:
             logger.info(f"Processing file {audio_path}")
             transcription = get_asr_result(audio_path, model, processor)
-            transcription_results[file_id] = transcription  # Update shared dictionary
+            logger.info(f"Finished processing file {audio_path} with transcription: {transcription}")
+            transcription_results[file_id] = transcription
             logger.info(f"Transcription for {audio_path}: {transcription}")
         except Exception as e:
             transcription_results[file_id] = "Failed"
