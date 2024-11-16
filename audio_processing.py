@@ -32,11 +32,8 @@ def get_asr_result(audio_path: str, model, processor, sr: int = 16000, chunk_dur
     Perform speech-to-text on an audio file, processing it in chunks.
     """
     try:
-        # Load audio file as waveform
-        logger.info(f"Loading audio file: {audio_path}")
         audio, _ = librosa.load(audio_path, sr=sr)
 
-        # Split the audio into chunks
         chunk_samples = sr * chunk_duration
         num_chunks = len(audio) // chunk_samples + 1
 
@@ -54,7 +51,6 @@ def get_asr_result(audio_path: str, model, processor, sr: int = 16000, chunk_dur
             inputs = {key: tensor.to(device) for key, tensor in inputs.items()}
 
             # Perform inference with the model
-            logger.info(f"Performing inference for chunk {i + 1} of {num_chunks}...")
             with torch.no_grad():
                 logits = model(inputs["input_values"], attention_mask=inputs.get("attention_mask")).logits
 
@@ -65,7 +61,6 @@ def get_asr_result(audio_path: str, model, processor, sr: int = 16000, chunk_dur
 
         # Combine all transcriptions
         final_transcription = " ".join(transcriptions)
-        logger.info("Transcription complete.")
         return final_transcription
 
     except Exception as e:
