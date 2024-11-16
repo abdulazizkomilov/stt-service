@@ -20,7 +20,7 @@ model.eval()
 
 
 # Define ASR function
-def get_asr_result(audio_path, model, processor, sr=16000):
+def get_asr_result(audio_path, sr=16000):
     audio, _ = librosa.load(audio_path, sr=sr)
 
     inputs = processor(audio, sampling_rate=sr, return_tensors="pt", padding=True)

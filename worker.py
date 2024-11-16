@@ -20,7 +20,7 @@ def worker(queue: Queue, transcription_results):
 
         try:
             logger.info(f"Processing file {audio_path}")
-            transcription = get_asr_result(audio_path, model, processor)
+            transcription = get_asr_result(audio_path)
             logger.info(f"Finished processing file {audio_path} with transcription: {transcription}")
             transcription_results[file_id] = transcription
             logger.info(f"Transcription for {audio_path}: {transcription}")
