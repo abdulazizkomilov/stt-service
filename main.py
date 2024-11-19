@@ -1,5 +1,8 @@
 import uuid
+import os
 import uvicorn
+import librosa
+import psutil
 import multiprocessing
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from typing import List
@@ -21,16 +24,28 @@ async def root():
 
 @app.post("/transcribe/")
 async def transcribe_audio(files: List[UploadFile] = File(...)):
-    """Endpoint for receiving audio files and adding them to the processing queue."""
     try:
         file_ids = []
+        total_length = 0
+
         for file in files:
             file_id = str(uuid.uuid4())
             file_path = await save_temp_file(file)
             audio_queue.put((file_id, file_path))
             transcription_results[file_id] = "Processing"
+            audio, sr = librosa.load(file_path, sr=None)
+            total_length += len(audio) / sr
+
             file_ids.append(file_id)
-        return {"message": "Audios added to the processing queue", "file_ids": file_ids}
+
+        avg_length = total_length / len(files) if files else 0
+
+        return {
+            "message": "Audios added to the processing queue",
+            "file_ids": file_ids,
+            "average_audio_length_seconds": avg_length,
+            "estimated_processing_time_minutes": avg_length * len(files) / 60,  # Example formula
+        }
     except Exception as e:
         logger.error(f"Failed to add audios to the queue: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to add audios to the queue: {e}")
@@ -51,6 +66,17 @@ async def get_transcription_result(file_id: str):
     except Exception as e:
         logger.error(f"Unexpected error retrieving transcription for {file_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve transcription result")
+
+
+@app.get("/metrics/")
+async def get_system_metrics():
+    process = psutil.Process(os.getpid())
+    metrics = {
+        "cpu_usage_percent": psutil.cpu_percent(),
+        "memory_usage_mb": psutil.virtual_memory().used / (1024 ** 2),
+        "queue_size": audio_queue.qsize(),
+    }
+    return metrics
 
 
 if __name__ == "__main__":
