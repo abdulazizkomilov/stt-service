@@ -58,7 +58,7 @@ if __name__ == "__main__":
     transcription_results = manager.dict()
     audio_queue = Queue()
 
-    num_workers = 1
+    num_workers = 2
     workers = []
 
     for _ in range(num_workers):
