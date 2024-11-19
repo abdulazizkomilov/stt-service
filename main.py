@@ -67,7 +67,7 @@ if __name__ == "__main__":
         workers.append(worker_process)
 
     try:
-        uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+        uvicorn.run(app, host="0.0.0.0", port=8000)
     finally:
         for _ in workers:
             audio_queue.put(None)
